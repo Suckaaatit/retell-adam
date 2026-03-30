@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { config } from '@/lib/config';
-import { logInfo, logWarn } from '@/lib/logger';
+import { logInfo, logError } from '@/lib/logger';
 
 /**
  * POST /api/twilio/twiml
  *
- * Returns TwiML that connects an active Twilio call to the ElevenLabs
- * Conversational AI agent via WebSocket media stream.
+ * When Twilio connects a call, this endpoint registers the call with
+ * ElevenLabs' register-call API, which returns TwiML that bridges
+ * the audio directly to the ElevenLabs agent.
  *
  * Flow:
  *   1. Dashboard call-now creates Twilio outbound call pointing here
  *   2. Twilio fetches this TwiML when the prospect answers
- *   3. TwiML <Connect><Stream> bridges audio to ElevenLabs WebSocket
- *   4. ElevenLabs agent ADAM handles the conversation
- *
- * Query params:
- *   - prospect_name: dynamic variable for the agent
- *   - company_name: dynamic variable for the agent
- *   - prospect_id: for tracking
- *   - conversation_id: ElevenLabs conversation reference
+ *   3. We call ElevenLabs register-call API to get TwiML
+ *   4. Return that TwiML to Twilio — ElevenLabs handles the conversation
  */
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -26,52 +21,73 @@ export async function POST(req: NextRequest) {
   const companyName = searchParams.get('company_name') || '';
   const prospectId = searchParams.get('prospect_id') || '';
 
-  logInfo('TwiML: generating stream connection', { prospectName, companyName, prospectId });
+  // Get Twilio call details from form body (Twilio sends as form-urlencoded)
+  let fromNumber = '';
+  let toNumber = '';
+  try {
+    const formData = await req.formData();
+    fromNumber = String(formData.get('From') || '');
+    toNumber = String(formData.get('To') || '');
+  } catch {
+    // May not have form data on initial request
+  }
 
-  // Validate request comes from Twilio (basic check)
-  const callSid = req.headers.get('x-twilio-signature') || searchParams.get('CallSid') || '';
+  logInfo('TwiML: registering call with ElevenLabs', { prospectName, companyName, prospectId, fromNumber, toNumber });
 
-  const agentId = config.elevenlabs.agentId;
+  try {
+    // Register call with ElevenLabs — returns TwiML
+    const registerResponse = await fetch('https://api.elevenlabs.io/v1/convai/twilio/register-call', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': config.elevenlabs.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        agent_id: config.elevenlabs.agentId,
+        from_number: fromNumber || '+10000000000',
+        to_number: toNumber || '+10000000000',
+        direction: 'outbound',
+        conversation_initiation_client_data: {
+          dynamic_variables: {
+            prospect_name: prospectName,
+            company_name: companyName,
+            prospect_id: prospectId,
+          },
+        },
+      }),
+    });
 
-  // Build the ElevenLabs WebSocket URL with agent ID
-  // Dynamic variables are passed as query parameters on the WebSocket URL
-  const wsParams = new URLSearchParams({
-    agent_id: agentId,
-  });
+    if (!registerResponse.ok) {
+      const errorText = await registerResponse.text();
+      logError('TwiML: ElevenLabs register-call failed', new Error(errorText), {
+        status: registerResponse.status,
+        fromNumber,
+        toNumber,
+      });
+      // Fallback: say error message to caller
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, an application error has occurred. Please try again later.</Say></Response>`,
+        { status: 200, headers: { 'Content-Type': 'text/xml' } }
+      );
+    }
 
-  const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?${wsParams.toString()}`;
+    // ElevenLabs returns TwiML directly — pass it through to Twilio
+    const twiml = await registerResponse.text();
 
-  // TwiML response: Connect call audio to ElevenLabs via WebSocket stream
-  // The <Stream> element sends bidirectional audio to the WebSocket
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Connect>
-    <Stream url="${escapeXml(wsUrl)}">
-      <Parameter name="prospect_name" value="${escapeXml(prospectName)}" />
-      <Parameter name="company_name" value="${escapeXml(companyName)}" />
-      <Parameter name="prospect_id" value="${escapeXml(prospectId)}" />
-    </Stream>
-  </Connect>
-</Response>`;
-
-  return new NextResponse(twiml, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/xml',
-    },
-  });
+    return new NextResponse(twiml, {
+      status: 200,
+      headers: { 'Content-Type': 'text/xml' },
+    });
+  } catch (err) {
+    logError('TwiML: unhandled error', err);
+    return new NextResponse(
+      `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, an application error has occurred. Please try again later.</Say></Response>`,
+      { status: 200, headers: { 'Content-Type': 'text/xml' } }
+    );
+  }
 }
 
 // Also handle GET in case Twilio is configured to GET the TwiML
 export async function GET(req: NextRequest) {
   return POST(req);
-}
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
