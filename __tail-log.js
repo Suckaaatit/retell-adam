@@ -1,0 +1,1 @@
+const fs=require('fs');const p='dev.log';if(!fs.existsSync(p)){console.log('NOLOG');process.exit(0);}const t=fs.readFileSync(p,'utf8');const lines=t.split(/\r?\n/).filter(Boolean);console.log(lines.slice(-30).join('\n')); 

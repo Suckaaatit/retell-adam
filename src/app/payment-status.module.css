@@ -1,0 +1,108 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background:
+    radial-gradient(circle at 7% 10%, rgba(109, 245, 207, 0.12), transparent 34%),
+    radial-gradient(circle at 92% 6%, rgba(247, 156, 69, 0.18), transparent 30%),
+    linear-gradient(160deg, #050913, #081022 50%, #060a16);
+}
+
+.card {
+  width: min(620px, 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(150, 176, 219, 0.28);
+  background:
+    linear-gradient(165deg, rgba(12, 23, 41, 0.9), rgba(7, 13, 24, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
+  padding: 1.8rem;
+  box-shadow: 0 20px 34px rgba(0, 0, 0, 0.42);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 166, 201, 0.34);
+  padding: 0.3rem 0.68rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(214, 227, 248, 0.85);
+}
+
+.badgeSuccess {
+  border-color: rgba(134, 250, 211, 0.52);
+  color: #96f7d7;
+  background: rgba(10, 48, 52, 0.54);
+}
+
+.badgeCancelled {
+  border-color: rgba(247, 172, 101, 0.5);
+  color: #ffc48d;
+  background: rgba(55, 30, 17, 0.5);
+}
+
+.title {
+  margin: 0.95rem 0 0;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #f4f8ff;
+}
+
+.copy {
+  margin: 0.82rem 0 0;
+  color: rgba(217, 228, 250, 0.86);
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.note {
+  margin: 0.95rem 0 0;
+  color: rgba(177, 195, 228, 0.78);
+  font-size: 0.88rem;
+}
+
+.actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.64rem;
+  flex-wrap: wrap;
+}
+
+.ghostButton,
+.solidButton {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.62rem 0.98rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 170ms ease, border-color 170ms ease;
+}
+
+.ghostButton {
+  color: #dce8ff;
+  border-color: rgba(147, 165, 198, 0.48);
+  background: rgba(8, 18, 34, 0.5);
+}
+
+.solidButton {
+  color: #072932;
+  border-color: rgba(166, 255, 227, 0.66);
+  background: linear-gradient(160deg, rgba(158, 254, 218, 0.98), rgba(94, 233, 194, 0.9));
+}
+
+.ghostButton:hover,
+.solidButton:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1rem;
+  }
+}
