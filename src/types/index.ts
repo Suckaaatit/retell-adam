@@ -7,6 +7,7 @@ export const EnvSchema = z.object({
   ELEVENLABS_API_KEY: z.string().min(1, 'ELEVENLABS_API_KEY is required'),
   ELEVENLABS_AGENT_ID: z.string().min(1, 'ELEVENLABS_AGENT_ID is required'),
   ELEVENLABS_PHONE_NUMBER_ID: z.string().optional().or(z.literal('')),
+  NEXT_PUBLIC_ELEVENLABS_AGENT_ID: z.string().optional().or(z.literal('')),
   ELEVENLABS_WEBHOOK_SECRET: z.string().min(1, 'ELEVENLABS_WEBHOOK_SECRET is required'),
   AGENT_SECRET: z.string().min(1, 'AGENT_SECRET is required'),
   TWILIO_ACCOUNT_SID: z.string().min(1, 'TWILIO_ACCOUNT_SID is required'),
