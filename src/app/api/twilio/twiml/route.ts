@@ -74,6 +74,13 @@ export async function POST(req: NextRequest) {
     // ElevenLabs returns TwiML directly — pass it through to Twilio
     const twiml = await registerResponse.text();
 
+    logInfo('TwiML: ElevenLabs returned TwiML', {
+      twimlLength: twiml.length,
+      twimlPreview: twiml.substring(0, 500),
+      fromNumber,
+      toNumber,
+    });
+
     return new NextResponse(twiml, {
       status: 200,
       headers: { 'Content-Type': 'text/xml' },
