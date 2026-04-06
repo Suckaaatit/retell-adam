@@ -1,8 +1,26 @@
 {
+  "functions": {
+    "src/app/api/twilio/twiml/route.ts": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "src/app/api/elevenlabs/actions/route.ts": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "src/app/api/elevenlabs/webhook/route.ts": {
+      "memory": 256,
+      "maxDuration": 30
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/followups",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/twilio/twiml",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
