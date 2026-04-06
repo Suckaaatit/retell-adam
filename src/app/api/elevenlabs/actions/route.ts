@@ -257,8 +257,84 @@ async function handleSendPaymentLink(
     return "Done, I've sent the payment link to their email. Ask them to check their inbox.";
   }
 
-  // For SMS: fire payment link via email as fallback (SMS sending would require Twilio SMS integration)
-  if (method === 'sms' && email) {
+  // SMS: send payment link via Twilio SMS
+  if (method === 'sms' && phone) {
+    const stripeLink = planTier === 'two_incident' ? config.stripe.link1100 : config.stripe.link650;
+    const smsBody = `Hey! Here's your God's Cleaning Crew setup link: ${stripeLink} — Click through, hit Join, and you're all set. Questions? Just reply here.`;
+
+    try {
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${config.twilio.accountSid}/Messages.json`;
+      const twilioAuth = Buffer.from(`${config.twilio.accountSid}:${config.twilio.authToken}`).toString('base64');
+      const fromNumber = config.twilio.fromNumber || '';
+
+      const smsResponse = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${twilioAuth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: phone,
+          From: fromNumber,
+          Body: smsBody,
+        }).toString(),
+      });
+
+      if (!smsResponse.ok) {
+        const errorText = await smsResponse.text();
+        logError('send_payment_link: Twilio SMS failed', new Error(errorText), { conversationId, phone });
+        // Fall back to email if available
+        if (email && EMAIL_REGEX.test(email)) {
+          fireBackgroundPayment({
+            call_id: dbCallId || undefined,
+            prospect_id: prospectId || undefined,
+            email,
+            retell_call_id: conversationId || `agent-mode-${Date.now()}`,
+            secret: config.app.internalSecret,
+            plan_tier: planTier,
+            plan_label: planLabel,
+          });
+          return "Done, I've sent the payment link to their email. Ask them to check their inbox.";
+        }
+        return "There was an issue sending the text. Ask them for their email instead.";
+      }
+
+      logInfo('send_payment_link: SMS sent successfully', { conversationId, prospectId, phone });
+
+      // Also send email if we have one
+      if (email && EMAIL_REGEX.test(email)) {
+        fireBackgroundPayment({
+          call_id: dbCallId || undefined,
+          prospect_id: prospectId || undefined,
+          email,
+          retell_call_id: conversationId || `agent-mode-${Date.now()}`,
+          secret: config.app.internalSecret,
+          plan_tier: planTier,
+          plan_label: planLabel,
+        });
+      }
+
+      return "Done, I've sent the payment link to their phone. Ask them to check their messages.";
+    } catch (err) {
+      logError('send_payment_link: SMS error', err, { conversationId, phone });
+      if (email && EMAIL_REGEX.test(email)) {
+        fireBackgroundPayment({
+          call_id: dbCallId || undefined,
+          prospect_id: prospectId || undefined,
+          email,
+          retell_call_id: conversationId || `agent-mode-${Date.now()}`,
+          secret: config.app.internalSecret,
+          plan_tier: planTier,
+          plan_label: planLabel,
+        });
+        return "Done, I've sent the payment link to their email. Ask them to check their inbox.";
+      }
+      return "There was an issue sending the text. Ask them for their email instead.";
+    }
+  }
+
+  // No phone for SMS — shouldn't reach here but fallback to email
+  if (email && EMAIL_REGEX.test(email)) {
     fireBackgroundPayment({
       call_id: dbCallId || undefined,
       prospect_id: prospectId || undefined,
@@ -268,22 +344,10 @@ async function handleSendPaymentLink(
       plan_tier: planTier,
       plan_label: planLabel,
     });
-    logInfo('send_payment_link: background payment fired (sms requested, email fallback)', { conversationId, prospectId });
-    return "Done, I've sent the payment link to their phone. Ask them to check their messages.";
+    return "Done, I've sent the payment link to their email. Ask them to check their inbox.";
   }
 
-  // SMS with no email — just use phone
-  fireBackgroundPayment({
-    call_id: dbCallId || undefined,
-    prospect_id: prospectId || undefined,
-    email: email || `${phone.replace('+', '')}@sms.placeholder`,
-    retell_call_id: conversationId || `agent-mode-${Date.now()}`,
-    secret: config.app.internalSecret,
-    plan_tier: planTier,
-    plan_label: planLabel,
-  });
-  logInfo('send_payment_link: background payment fired', { conversationId, prospectId, method });
-  return "Done, I've sent the payment link to their phone. Ask them to check their messages.";
+  return "I need either a phone number or email to send the link.";
 }
 
 function fireBackgroundPayment(payload: ProcessPaymentPayload): void {
