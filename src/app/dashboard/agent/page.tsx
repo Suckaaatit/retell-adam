@@ -52,9 +52,12 @@ function AgentPageContent() {
 
   // Send Payment Link state
   const [emailInput, setEmailInput] = useState("");
+  const [smsInput, setSmsInput] = useState("");
+  const [sendMethod, setSendMethod] = useState<"email" | "sms">("email");
   const [planTier, setPlanTier] = useState<"one_incident" | "two_incident">("one_incident");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [smsSent, setSmsSent] = useState(false);
 
   // ElevenLabs conversation hook
   const conversation = useConversation({
@@ -154,6 +157,34 @@ function AgentPageContent() {
       toast.success(`Payment link sent to ${trimmed}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send email.");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Send payment SMS
+  const sendPaymentSms = async () => {
+    const trimmed = smsInput.trim();
+    if (!trimmed || !/^\+?[1-9]\d{6,14}$/.test(trimmed.replace(/[\s()-]/g, ""))) {
+      toast.error("Please enter a valid phone number.");
+      return;
+    }
+    setSendingEmail(true);
+    setSmsSent(false);
+    try {
+      const res = await fetch("/api/dashboard/send-payment-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: trimmed, plan_tier: planTier }),
+      });
+      const payload = await res.json();
+      if (!res.ok || payload.error) {
+        throw new Error(payload.error || "Failed to send SMS.");
+      }
+      setSmsSent(true);
+      toast.success(`Payment link texted to ${trimmed}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send SMS.");
     } finally {
       setSendingEmail(false);
     }
@@ -354,23 +385,57 @@ function AgentPageContent() {
         {/* Send Payment Link */}
         <div className="glass-card flex w-full flex-col rounded-xl p-8">
           <h3 className="mb-1 text-xl font-bold text-white">Send Payment Link</h3>
-          <p className="mb-6 text-sm text-gray-400">Send a Stripe payment link via email.</p>
+          <p className="mb-6 text-sm text-gray-400">Send a Stripe payment link via email or SMS.</p>
 
           <div className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-6">
+            {/* Email / SMS toggle */}
+            <div className="mb-4 flex gap-2">
+              <button
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${sendMethod === "email" ? "bg-[var(--brand-1)] text-white" : "bg-[rgba(255,255,255,0.05)] text-gray-400 hover:text-white"}`}
+                onClick={() => setSendMethod("email")}
+                type="button"
+              >
+                Email
+              </button>
+              <button
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${sendMethod === "sms" ? "bg-[var(--brand-1)] text-white" : "bg-[rgba(255,255,255,0.05)] text-gray-400 hover:text-white"}`}
+                onClick={() => setSendMethod("sms")}
+                type="button"
+              >
+                SMS
+              </button>
+            </div>
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1">
-                <label className="mb-1 block text-xs text-[var(--text-muted)]" htmlFor="prospect-email">
-                  Email address
-                </label>
-                <Input
-                  disabled={sendingEmail}
-                  id="prospect-email"
-                  onChange={(e) => { setEmailInput(e.target.value); setEmailSent(false); }}
-                  placeholder="prospect@example.com"
-                  type="email"
-                  value={emailInput}
-                />
-              </div>
+              {sendMethod === "email" ? (
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs text-[var(--text-muted)]" htmlFor="prospect-email">
+                    Email address
+                  </label>
+                  <Input
+                    disabled={sendingEmail}
+                    id="prospect-email"
+                    onChange={(e) => { setEmailInput(e.target.value); setEmailSent(false); }}
+                    placeholder="prospect@example.com"
+                    type="email"
+                    value={emailInput}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs text-[var(--text-muted)]" htmlFor="prospect-sms">
+                    Phone number
+                  </label>
+                  <Input
+                    disabled={sendingEmail}
+                    id="prospect-sms"
+                    onChange={(e) => { setSmsInput(e.target.value); setSmsSent(false); }}
+                    placeholder="+14165551234"
+                    type="tel"
+                    value={smsInput}
+                  />
+                </div>
+              )}
               <div className="w-full sm:w-48">
                 <label className="mb-1 block text-xs text-[var(--text-muted)]" htmlFor="plan-tier">
                   Plan
@@ -387,15 +452,18 @@ function AgentPageContent() {
               </div>
               <Button
                 className="h-10 min-w-[160px] bg-[var(--brand-1)] text-white hover:bg-[#3da0ff]"
-                disabled={sendingEmail || !emailInput.trim()}
-                onClick={() => void sendPaymentEmail()}
+                disabled={sendingEmail || (sendMethod === "email" ? !emailInput.trim() : !smsInput.trim())}
+                onClick={() => void (sendMethod === "email" ? sendPaymentEmail() : sendPaymentSms())}
                 type="button"
               >
-                {sendingEmail ? "Sending..." : "Send Payment Link"}
+                {sendingEmail ? "Sending..." : sendMethod === "email" ? "Send Email" : "Send SMS"}
               </Button>
             </div>
             {emailSent ? (
               <p className="mt-3 text-xs text-[var(--green)]">Payment link email sent successfully!</p>
+            ) : null}
+            {smsSent ? (
+              <p className="mt-3 text-xs text-[var(--green)]">Payment link texted successfully!</p>
             ) : null}
           </div>
         </div>
