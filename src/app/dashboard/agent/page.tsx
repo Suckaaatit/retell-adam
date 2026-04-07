@@ -83,6 +83,10 @@ function AgentPageContent() {
   const startCall = useCallback(async () => {
     setCallError(null);
     setTranscript("");
+    if (!AGENT_ID) {
+      setCallError("Agent ID is not configured. Set NEXT_PUBLIC_ELEVENLABS_AGENT_ID in Vercel and redeploy.");
+      return;
+    }
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({ agentId: AGENT_ID });
