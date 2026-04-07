@@ -20,7 +20,7 @@
     },
     {
       "path": "/api/twilio/twiml",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
