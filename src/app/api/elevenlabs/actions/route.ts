@@ -46,14 +46,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ result: 'Invalid request.' });
     }
 
-    const parsed = ElevenLabsToolCallSchema.safeParse(rawPayload);
-    if (!parsed.success) {
-      logWarn('ElevenLabs actions: invalid payload', { validationError: parsed.error.message });
-      return NextResponse.json({ result: 'Invalid request.' });
-    }
+    // Support both formats:
+    // 1. Wrapped: { tool_name, tool_call_id, conversation_id, parameters: { ... } }
+    // 2. ElevenLabs webhook: { phone, plan, method, ... } (flat params, tool_name from URL or header)
+    const payload = rawPayload as Record<string, unknown>;
 
-    const { tool_name, tool_call_id, parameters, conversation_id } = parsed.data;
-    const conversationId = conversation_id || '';
+    let tool_name: string;
+    let tool_call_id: string;
+    let parameters: Record<string, unknown>;
+    let conversationId: string;
+
+    if (payload.tool_name && payload.tool_call_id) {
+      // Wrapped format (legacy / direct API calls)
+      const parsed = ElevenLabsToolCallSchema.safeParse(rawPayload);
+      if (!parsed.success) {
+        logWarn('ElevenLabs actions: invalid payload', { validationError: parsed.error.message });
+        return NextResponse.json({ result: 'Invalid request.' });
+      }
+      tool_name = parsed.data.tool_name;
+      tool_call_id = parsed.data.tool_call_id;
+      parameters = parsed.data.parameters;
+      conversationId = parsed.data.conversation_id || '';
+    } else {
+      // ElevenLabs webhook format — flat params, detect tool from content
+      conversationId = String(payload.conversation_id || '');
+      tool_call_id = String(payload.tool_call_id || `webhook-${Date.now()}`);
+
+      // Detect tool name from parameters present
+      if (payload.phone || payload.email || payload.plan || payload.method) {
+        tool_name = 'send_payment_link';
+      } else if (payload.category || payload.verbatim || payload.objection_type) {
+        tool_name = 'log_objection';
+      } else if (payload.date || payload.reason) {
+        tool_name = 'schedule_followup';
+      } else if (payload.action === 'mark' || payload.reason === 'remove_me' || payload.reason === 'stop_calling' || payload.reason === 'dont_call_again') {
+        tool_name = 'mark_do_not_call';
+      } else {
+        tool_name = 'check_payment_status';
+      }
+
+      parameters = payload as Record<string, unknown>;
+      logInfo('ElevenLabs actions: detected webhook format', { tool_name, conversationId });
+    }
 
     // 3. Idempotency via tool_call_id
     const { data: existing, error: dedupLookupError } = await supabase
