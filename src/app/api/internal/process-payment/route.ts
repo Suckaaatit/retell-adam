@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { resend } from '@/lib/resend';
+import { sendEmail } from '@/lib/mailer';
 import { config } from '@/lib/config';
 import { ProcessPaymentPayloadSchema } from '@/types';
 import { logInfo, logError, logWarn } from '@/lib/logger';
@@ -152,10 +152,8 @@ export async function POST(req: NextRequest) {
       });
     } else {
       try {
-        const emailResult = await resend.emails.send({
-          from: `${config.resend.fromName} <${config.resend.fromEmail}>`,
+        const emailResult = await sendEmail({
           to: email,
-          replyTo: config.resend.replyToEmail,
           subject: "Your Biohazard Response Plan — God's Cleaning Crew",
           html: buildPaymentEmailHtml({
             checkoutUrl: paymentLink,

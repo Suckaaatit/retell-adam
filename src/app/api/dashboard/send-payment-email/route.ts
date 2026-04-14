@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
-import { resend } from "@/lib/resend";
+import { sendEmail } from "@/lib/mailer";
 import { config } from "@/lib/config";
 import { ok, fail, parseJson, requireSupabaseConfigured, withErrorHandling } from "../_utils";
 
@@ -96,10 +96,8 @@ export async function POST(req: NextRequest) {
     let emailSent = false;
 
     if (!resendDisabled) {
-      const emailResult = await resend.emails.send({
-        from: `${config.resend.fromName} <${config.resend.fromEmail}>`,
+      const emailResult = await sendEmail({
         to: email,
-        replyTo: config.resend.replyToEmail,
         subject: "Your Biohazard Response Plan — God's Cleaning Crew",
         html: buildPaymentEmailHtml({
           checkoutUrl: paymentLink,
