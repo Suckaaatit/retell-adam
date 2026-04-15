@@ -293,7 +293,8 @@ async function handleSendPaymentLink(
 
   // SMS: send payment link via Twilio SMS
   if (method === 'sms' && phone) {
-    const stripeLink = planTier === 'two_incident' ? config.stripe.link1100 : config.stripe.link650;
+    const baseStripeLink = planTier === 'two_incident' ? config.stripe.link1100 : config.stripe.link650;
+    const stripeLink = email ? `${baseStripeLink}&email=${encodeURIComponent(email)}` : baseStripeLink;
     const smsBody = `Hey! Here's your God Crew setup link: ${stripeLink} — Click through, hit Join, and you're all set. Questions? Just reply here.`;
 
     try {

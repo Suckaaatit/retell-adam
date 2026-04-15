@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
 
     // 3. Select plan + Stripe payment link
     const amountCents = plan_tier === "two_incident" ? 110000 : 65000;
-    const paymentLink = plan_tier === "two_incident" ? config.stripe.link1100 : config.stripe.link650;
+    const basePaymentLink = plan_tier === "two_incident" ? config.stripe.link1100 : config.stripe.link650;
+    const paymentLink = `${basePaymentLink}&email=${encodeURIComponent(email)}`;
     const planLabel = plan_tier === "two_incident"
       ? "Annual Biohazard Response — 2 Incident Coverage"
       : "Annual Biohazard Response — 1 Incident Coverage";

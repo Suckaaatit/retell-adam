@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Send payment email
-    const paymentLink = config.stripe.link650;
+    const basePaymentLink = config.stripe.link650;
+    const paymentLink = `${basePaymentLink}&email=${encodeURIComponent(email)}`;
     const planLabel = 'Annual Biohazard Response — 1 Incident Coverage';
     const amountCents = 65000;
 

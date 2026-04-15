@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
 
     const selectedPlanTier: 'one_incident' | 'two_incident' = plan_tier === 'two_incident' ? 'two_incident' : 'one_incident';
     const amountCents = selectedPlanTier === 'two_incident' ? 110000 : 65000;
-    const paymentLink = selectedPlanTier === 'two_incident' ? config.stripe.link1100 : config.stripe.link650;
+    const basePaymentLink = selectedPlanTier === 'two_incident' ? config.stripe.link1100 : config.stripe.link650;
+    const paymentLink = email ? `${basePaymentLink}&email=${encodeURIComponent(email)}` : basePaymentLink;
     const resolvedPlanLabel =
       plan_label ||
       (selectedPlanTier === 'two_incident'
