@@ -63,7 +63,7 @@ function loadConfig() {
     resend: {
       apiKey: clean(result.data.RESEND_API_KEY),
       fromEmail: result.data.RESEND_FROM_EMAIL.trim(),
-      fromName: cleanOrFallback(result.data.RESEND_FROM_NAME, "Adam at God's Cleaning Crew"),
+      fromName: cleanOrFallback(result.data.RESEND_FROM_NAME, "Adam at God Crew"),
       webhookSecret: cleanOptional(result.data.RESEND_WEBHOOK_SECRET),
       replyToEmail:
         cleanOrFallback(

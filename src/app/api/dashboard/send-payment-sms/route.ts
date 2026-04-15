@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const paymentLink = plan_tier === "two_incident" ? config.stripe.link1100 : config.stripe.link650;
 
     // 4. Send SMS via Twilio
-    const smsBody = `Hey! Here's your God's Cleaning Crew setup link: ${paymentLink} — Click through, hit Join, and you're all set. Questions? Just reply here.`;
+    const smsBody = `Hey! Here's your God Crew setup link: ${paymentLink} — Click through, hit Join, and you're all set. Questions? Just reply here.`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${config.twilio.accountSid}/Messages.json`;
     const twilioAuth = Buffer.from(`${config.twilio.accountSid}:${config.twilio.authToken}`).toString("base64");

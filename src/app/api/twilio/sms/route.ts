@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     try {
       await sendEmail({
         to: email,
-        subject: "Your Biohazard Response Plan — God's Cleaning Crew",
+        subject: "Your Biohazard Response Plan — God Crew",
         html: buildPaymentEmailHtml({
           checkoutUrl: paymentLink,
           prospectName,
@@ -164,7 +164,7 @@ function buildPaymentEmailHtml(opts: {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#111;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px;text-align:center;">
-    <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">God&#39;s Cleaning Crew</h1>
+    <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">God Crew</h1>
     <p style="color:#888;font-size:14px;margin:0;">Biohazard Response Plan</p>
   </td></tr>
   <tr><td style="padding:0 32px 24px;">
@@ -189,8 +189,8 @@ function buildPaymentEmailHtml(opts: {
   </td></tr>
   <tr><td style="padding:24px 32px;border-top:1px solid #222;text-align:center;">
     <p style="color:#666;font-size:12px;margin:0;">
-      Questions? Call ${escapeHtml(opts.phoneNumber)} or visit
-      <a href="${escapeHtml(opts.websiteUrl)}" style="color:#4a9eff;">${escapeHtml(opts.websiteUrl)}</a>
+      If you have any questions, reply to this email at <a href="mailto:hi@godcrew.com" style="color:#4a9eff;">hi@godcrew.com</a><br/>
+      Adam — from God Crew
     </p>
   </td></tr>
 </table>

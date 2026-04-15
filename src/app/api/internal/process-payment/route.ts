@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       try {
         const emailResult = await sendEmail({
           to: email,
-          subject: "Your Biohazard Response Plan — God's Cleaning Crew",
+          subject: "Your Biohazard Response Plan — God Crew",
           html: buildPaymentEmailHtml({
             checkoutUrl: paymentLink,
             prospectName,
@@ -272,7 +272,7 @@ function buildPaymentEmailHtml({
     <div style="background:#0a0a0a;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#e9f6ff;">
       <div style="max-width:620px;margin:0 auto;background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;">
         <div style="padding:26px 24px;border-bottom:1px solid rgba(255,255,255,0.08);">
-          <h1 style="margin:0;font-size:22px;line-height:1.3;color:#ffffff;">Your Biohazard Response Plan — God's Cleaning Crew</h1>
+          <h1 style="margin:0;font-size:22px;line-height:1.3;color:#ffffff;">Your Biohazard Response Plan — God Crew</h1>
           <p style="margin:12px 0 0;font-size:14px;color:#b6c6d8;">Hi ${escapeHtml(prospectName)},</p>
           <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:#d6e5f2;">
             Great speaking with you just now. As discussed, here are the details for your annual biohazard response coverage.
@@ -311,11 +311,10 @@ function buildPaymentEmailHtml({
 
         <div style="padding:16px 24px 24px;border-top:1px solid rgba(255,255,255,0.08);">
           <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#d6e5f2;">
-            If you have any questions, reply to this email or call us at ${escapeHtml(phoneNumber)}.
+            If you have any questions, reply to this email at <a href="mailto:hi@godcrew.com" style="color:#8ed5ff;text-decoration:none;">hi@godcrew.com</a>
           </p>
           <p style="margin:0;font-size:13px;color:#9eb2c6;">
-            God's Cleaning Crew<br/>
-            <a href="${websiteUrl}" style="color:#8ed5ff;text-decoration:none;">${escapeHtml(websiteUrl)}</a>
+            Adam — from God Crew
           </p>
           <p style="margin:12px 0 0;font-size:11px;line-height:1.4;color:#7f97ad;word-break:break-all;">
             If the button above doesn't work, copy and paste this secure checkout link into your browser:<br/>
