@@ -155,43 +155,62 @@ function buildPaymentEmailHtml(opts: {
   phoneNumber: string;
   websiteUrl: string;
 }) {
-  const price = `$${(opts.amountCents / 100).toLocaleString("en-US")}`;
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#111;border-radius:12px;overflow:hidden;">
-  <tr><td style="padding:32px;text-align:center;">
-    <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">God Crew</h1>
-    <p style="color:#888;font-size:14px;margin:0;">Biohazard Response Plan</p>
-  </td></tr>
-  <tr><td style="padding:0 32px 24px;">
-    <p style="color:#ccc;font-size:15px;line-height:1.6;">
-      Hi ${escapeHtml(opts.prospectName)},<br/><br/>
-      Thank you for speaking with us about protecting <strong>${escapeHtml(opts.companyName)}</strong>.
-      As discussed, here is your personalized biohazard response plan:
-    </p>
-    <table width="100%" style="background:#1a1a1a;border-radius:8px;margin:20px 0;padding:16px;" cellpadding="8">
-      <tr><td style="color:#888;font-size:13px;">Plan</td><td style="color:#fff;font-size:13px;">${escapeHtml(opts.planLabel)}</td></tr>
-      <tr><td style="color:#888;font-size:13px;">Price</td><td style="color:#0f0;font-size:15px;font-weight:bold;">${price}/year</td></tr>
-      <tr><td style="color:#888;font-size:13px;">Response</td><td style="color:#fff;font-size:13px;">2-hour on-site guarantee</td></tr>
-    </table>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${escapeHtml(opts.checkoutUrl)}" style="background:#00e676;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">
-        Secure Your Coverage Now
-      </a>
+  const amountText = opts.amountCents >= 110000 ? '$1,100/year' : '$650/year';
+
+  return `
+    <div style="background:#0a0a0a;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#e9f6ff;">
+      <div style="max-width:620px;margin:0 auto;background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;">
+        <div style="padding:26px 24px;border-bottom:1px solid rgba(255,255,255,0.08);">
+          <h1 style="margin:0;font-size:22px;line-height:1.3;color:#ffffff;">Your Biohazard Response Plan — God Crew</h1>
+          <p style="margin:12px 0 0;font-size:14px;color:#b6c6d8;">Hi ${escapeHtml(opts.prospectName)},</p>
+          <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:#d6e5f2;">
+            Great speaking with you just now. As discussed, here are the details for your annual biohazard response coverage.
+          </p>
+        </div>
+
+        <div style="padding:20px 24px;">
+          <h2 style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7fc8ff;">Your Plan</h2>
+          <div style="padding:14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);">
+            <p style="margin:0 0 8px;font-size:14px;"><strong>Plan:</strong> ${escapeHtml(opts.planLabel)}</p>
+            <p style="margin:0 0 8px;font-size:14px;"><strong>Price:</strong> ${amountText}</p>
+            <p style="margin:0 0 8px;font-size:14px;"><strong>Response Time:</strong> 4 hours or less, guaranteed</p>
+            <p style="margin:0;font-size:14px;"><strong>Property:</strong> ${escapeHtml(opts.companyName)}</p>
+          </div>
+        </div>
+
+        <div style="padding:0 24px 10px;">
+          <h2 style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7fc8ff;">What Is Included</h2>
+          <ul style="margin:0;padding-left:18px;color:#dce9f5;font-size:14px;line-height:1.75;">
+            <li>Professional biohazard cleanup crew dispatched within 4 hours</li>
+            <li>Certified technicians with full PPE and biohazard disposal</li>
+            <li>No surprise billing — flat annual rate, no hidden fees</li>
+            <li>No long-term lock-in — yearly plan, cancel anytime</li>
+            <li>24/7 emergency dispatch hotline</li>
+          </ul>
+        </div>
+
+        <div style="padding:18px 24px 12px;text-align:center;">
+          <a href="${escapeHtml(opts.checkoutUrl)}" style="display:inline-block;background:linear-gradient(90deg,#38B6FF,#0066CC);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:10px;">
+            Complete Your Enrollment &rarr;
+          </a>
+          <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#a9bcd0;">
+            This is a secure payment page powered by Stripe. Your payment information is encrypted and never stored on our servers.
+          </p>
+        </div>
+
+        <div style="padding:16px 24px 24px;border-top:1px solid rgba(255,255,255,0.08);">
+          <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#d6e5f2;">
+            If you have any questions, reply to this email at <a href="mailto:hi@godcrew.com" style="color:#8ed5ff;text-decoration:none;">hi@godcrew.com</a>
+          </p>
+          <p style="margin:0;font-size:13px;color:#9eb2c6;">
+            Adam — from God Crew
+          </p>
+          <p style="margin:12px 0 0;font-size:11px;line-height:1.4;color:#7f97ad;word-break:break-all;">
+            If the button above doesn't work, copy and paste this secure checkout link into your browser:<br/>
+            ${escapeHtml(opts.checkoutUrl)}
+          </p>
+        </div>
+      </div>
     </div>
-    <p style="color:#666;font-size:12px;text-align:center;">
-      Or copy this link: ${escapeHtml(opts.checkoutUrl)}
-    </p>
-  </td></tr>
-  <tr><td style="padding:24px 32px;border-top:1px solid #222;text-align:center;">
-    <p style="color:#666;font-size:12px;margin:0;">
-      If you have any questions, reply to this email at <a href="mailto:hi@godcrew.com" style="color:#4a9eff;">hi@godcrew.com</a><br/>
-      Adam — from God Crew
-    </p>
-  </td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
+  `;
 }
