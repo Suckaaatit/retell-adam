@@ -14,10 +14,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     let conversationId = searchParams.get("conversation_id");
 
-    // If no conversation_id provided, fetch the latest active conversation
+    // If no conversation_id provided, fetch the latest conversation
     if (!conversationId) {
       const listRes = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversations?agent_id=${config.elevenlabs.agentId}&page_size=1`,
+        `https://api.elevenlabs.io/v1/convai/conversations?agent_id=${config.elevenlabs.agentId}&page_size=5`,
         {
           headers: { "xi-api-key": config.elevenlabs.apiKey },
           cache: "no-store",
@@ -35,8 +35,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ data: [], error: null, count: 0 });
       }
 
-      // Get the most recent conversation
-      conversationId = conversations[0].conversation_id;
+      // Prefer active conversation, fall back to most recent
+      const active = conversations.find(
+        (c: { status: string }) => c.status === "in-progress" || c.status === "initiated" || c.status === "processing"
+      );
+      conversationId = active ? active.conversation_id : conversations[0].conversation_id;
     }
 
     // Fetch conversation details with transcript
