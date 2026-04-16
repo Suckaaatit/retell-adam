@@ -50,6 +50,10 @@ function AgentPageContent() {
   const [calling, setCalling] = useState(false);
   const [callResult, setCallResult] = useState<string | null>(null);
 
+  // Live transcript state
+  const [liveTranscript, setLiveTranscript] = useState<Array<{ speaker: string; text: string; created_at: string }>>([]);
+  const [isCallActive, setIsCallActive] = useState(false);
+
   // Send Payment Link state
   const [emailInput, setEmailInput] = useState("");
   const [smsInput, setSmsInput] = useState("");
@@ -129,6 +133,8 @@ function AgentPageContent() {
       }
       setCallResult(`Call initiated: ${payload.data?.callId || "success"}`);
       toast.success("Call initiated!");
+      setLiveTranscript([]);
+      setIsCallActive(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Call failed.";
       toast.error(msg);
@@ -248,6 +254,30 @@ function AgentPageContent() {
     const id = window.setInterval(() => void loadPerformance(), 30000);
     return () => window.clearInterval(id);
   }, []);
+
+  // Live transcript polling — polls every 2 seconds when a call is active
+  useEffect(() => {
+    if (!isCallActive) return;
+
+    const pollTranscript = async () => {
+      try {
+        const res = await fetch("/api/dashboard/live-transcript", { cache: "no-store" });
+        const payload = await res.json();
+        if (res.ok && payload.data) {
+          setLiveTranscript(payload.data.filter((line: { speaker: string }) => line.speaker !== "system"));
+          // Check if call ended
+          const ended = payload.data.some((line: { text: string }) => line.text === "[CALL ENDED]");
+          if (ended) setIsCallActive(false);
+        }
+      } catch {
+        // Non-fatal
+      }
+    };
+
+    void pollTranscript();
+    const id = window.setInterval(() => void pollTranscript(), 2000);
+    return () => window.clearInterval(id);
+  }, [isCallActive]);
 
   const callStatus = conversation.status;
   const statusLabel = callStatus === "connected" ? "Active" : callStatus === "connecting" ? "Connecting" : "Ended";
@@ -383,6 +413,39 @@ function AgentPageContent() {
                 {safeText(callResult)}
               </p>
             ) : null}
+          </div>
+        </div>
+
+        {/* Live Call Transcript */}
+        <div className="glass-card flex w-full flex-col rounded-xl p-8">
+          <div className="mb-1 flex items-center gap-3">
+            <h2 className="text-xl font-bold text-white">Live Call Transcript</h2>
+            {isCallActive ? (
+              <span className="flex items-center gap-1.5 text-xs text-[var(--green)]">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
+                Live
+              </span>
+            ) : null}
+          </div>
+          <p className="mb-6 text-sm text-gray-400">Real-time transcription of active phone calls.</p>
+
+          <div className="rounded-xl border border-[var(--line)] bg-[rgba(0,0,0,0.3)] p-6" style={{ maxHeight: "400px", overflowY: "auto" }}>
+            {liveTranscript.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                {isCallActive ? "Waiting for speech..." : "No active call. Make a call to see the live transcript here."}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {liveTranscript.map((line, i) => (
+                  <div key={i} className="flex gap-2 text-sm">
+                    <span className={`font-semibold min-w-[50px] ${line.speaker === "agent" ? "text-[var(--brand-1)]" : "text-[var(--green)]"}`}>
+                      {line.speaker === "agent" ? "Agent" : "Client"}:
+                    </span>
+                    <span className="text-gray-300">{line.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
