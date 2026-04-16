@@ -255,7 +255,7 @@ function AgentPageContent() {
     return () => window.clearInterval(id);
   }, []);
 
-  // Live transcript polling — polls every 2 seconds when a call is active
+  // Live transcript polling — polls ElevenLabs every 2 seconds when a call is active
   useEffect(() => {
     if (!isCallActive) return;
 
@@ -264,10 +264,11 @@ function AgentPageContent() {
         const res = await fetch("/api/dashboard/live-transcript", { cache: "no-store" });
         const payload = await res.json();
         if (res.ok && payload.data) {
-          setLiveTranscript(payload.data.filter((line: { speaker: string }) => line.speaker !== "system"));
+          setLiveTranscript(payload.data);
           // Check if call ended
-          const ended = payload.data.some((line: { text: string }) => line.text === "[CALL ENDED]");
-          if (ended) setIsCallActive(false);
+          if (payload.status === "done" || payload.status === "failed") {
+            setIsCallActive(false);
+          }
         }
       } catch {
         // Non-fatal

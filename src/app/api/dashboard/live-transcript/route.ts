@@ -1,50 +1,79 @@
-import { NextRequest } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { ok, fail, requireSupabaseConfigured, withErrorHandling } from "../_utils";
+import { NextRequest, NextResponse } from "next/server";
+import { config } from "@/lib/config";
+import { logError } from "@/lib/logger";
 
 /**
- * GET /api/dashboard/live-transcript?call_sid=X or ?prospect_id=X
+ * GET /api/dashboard/live-transcript?conversation_id=X
+ * GET /api/dashboard/live-transcript  (no param = fetches latest active conversation)
  *
- * Returns recent live transcript lines for an active call.
- * Dashboard polls this every 2 seconds to display real-time transcription.
+ * Fetches live transcript from ElevenLabs Conversations API.
+ * Polls ElevenLabs directly — works during active calls.
  */
 export async function GET(req: NextRequest) {
-  return withErrorHandling("live-transcript", async () => {
-    const dbCheck = requireSupabaseConfigured();
-    if (dbCheck) return dbCheck;
-
+  try {
     const { searchParams } = new URL(req.url);
-    const callSid = searchParams.get("call_sid");
-    const prospectId = searchParams.get("prospect_id");
-    const after = searchParams.get("after"); // ISO timestamp — only return lines after this
+    let conversationId = searchParams.get("conversation_id");
 
-    let query = supabase
-      .from("live_transcripts")
-      .select("id, call_sid, prospect_id, speaker, text, created_at")
-      .order("created_at", { ascending: true });
+    // If no conversation_id provided, fetch the latest active conversation
+    if (!conversationId) {
+      const listRes = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversations?agent_id=${config.elevenlabs.agentId}&page_size=1`,
+        {
+          headers: { "xi-api-key": config.elevenlabs.apiKey },
+          cache: "no-store",
+        }
+      );
 
-    if (callSid) {
-      query = query.eq("call_sid", callSid);
-    } else if (prospectId) {
-      query = query.eq("prospect_id", prospectId);
-    } else {
-      // No filter — get most recent call's transcripts (last 5 minutes)
-      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      query = query.gte("created_at", fiveMinAgo);
+      if (!listRes.ok) {
+        return NextResponse.json({ data: [], error: null, count: 0 });
+      }
+
+      const listData = await listRes.json();
+      const conversations = listData.conversations || [];
+
+      if (conversations.length === 0) {
+        return NextResponse.json({ data: [], error: null, count: 0 });
+      }
+
+      // Get the most recent conversation
+      conversationId = conversations[0].conversation_id;
     }
 
-    if (after) {
-      query = query.gt("created_at", after);
+    // Fetch conversation details with transcript
+    const detailRes = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
+      {
+        headers: { "xi-api-key": config.elevenlabs.apiKey },
+        cache: "no-store",
+      }
+    );
+
+    if (!detailRes.ok) {
+      return NextResponse.json({ data: [], error: null, count: 0 });
     }
 
-    query = query.limit(200);
+    const detail = await detailRes.json();
+    const transcript = detail.transcript || [];
+    const status = detail.status || "unknown";
 
-    const { data, error } = await query;
+    // Map to simple format for the UI
+    const lines = transcript
+      .filter((t: { message?: string }) => t.message && t.message.trim())
+      .map((t: { role: string; message: string; time_in_call_secs: number }) => ({
+        speaker: t.role === "agent" ? "agent" : "client",
+        text: t.message,
+        time: t.time_in_call_secs,
+      }));
 
-    if (error) {
-      return fail("Failed to fetch live transcript", 500);
-    }
-
-    return ok(data || [], data?.length || 0);
-  });
+    return NextResponse.json({
+      data: lines,
+      error: null,
+      count: lines.length,
+      conversation_id: conversationId,
+      status,
+    });
+  } catch (err) {
+    logError("live-transcript: error", err);
+    return NextResponse.json({ data: [], error: null, count: 0 });
+  }
 }

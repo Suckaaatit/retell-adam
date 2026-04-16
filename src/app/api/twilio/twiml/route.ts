@@ -71,13 +71,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ElevenLabs returns TwiML directly — inject Real-Time Transcription
-    let twiml = await registerResponse.text();
-
-    // Inject Twilio Real-Time Transcription into TwiML
-    const transcriptionCallbackUrl = `${config.app.url}/api/twilio/transcription?prospect_id=${encodeURIComponent(prospectId)}`;
-    const transcriptionTwiml = `<Start><Transcription statusCallbackUrl="${transcriptionCallbackUrl}" statusCallbackMethod="POST" inboundTrackLabel="client" outboundTrackLabel="agent" /></Start>`;
-    twiml = twiml.replace('</Response>', `${transcriptionTwiml}</Response>`);
+    // ElevenLabs returns TwiML directly
+    const twiml = await registerResponse.text();
 
     logInfo('TwiML: ElevenLabs returned TwiML with live transcription', {
       twimlLength: twiml.length,
