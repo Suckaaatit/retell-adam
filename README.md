@@ -1,6 +1,6 @@
 # AI Outbound Voice Sales System
 
-**Live:** [godscrew.vercel.app](https://godscrew.vercel.app) | **Repo:** [github.com/Suckaaatit/godscrew](https://github.com/Suckaaatit/godscrew)
+ | **Repo:** [github.com/Suckaaatit/godscrew](https://github.com/Suckaaatit/godscrew)
 
 Production-ready AI agent that calls prospects, delivers a structured sales pitch, handles objections, collects email, sends a Stripe payment link mid-call, stays on the line while they pay, confirms payment, and logs everything to a CRM database — fully automated.
 
